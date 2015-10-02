@@ -11,18 +11,27 @@ import (
 func init() {
 	http.HandleFunc("/", survey)
 	http.Handle("/static", http.FileServer(http.Dir("./static/")))
-	http.HandleFunc("/result", result)
-	http.HandleFunc("/fixture", fixture)
+	http.HandleFunc("/questions.csv", result)
 }
 
-var tmpl = template.Must(template.ParseFiles("templates/survey.html"))
+var tmpl = template.Must(template.New("survey.html").Funcs(
+	template.FuncMap{
+		"loop": func(n int) []string {
+			return make([]string, n)
+		},
+	}).ParseFiles("templates/survey.html"))
 
 func survey(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	
-	// Process existing response.
-	response, _ := strconv.ParseInt(r.FormValue("question"), 10, 64)
-	if response != 0 {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	
+	// Process existing response, if one is given.
+	question := r.FormValue("question")
+	if question != "" {
 		values := make([]int, 0)
 		
 		for i := 0;; i++ {
@@ -33,11 +42,14 @@ func survey(w http.ResponseWriter, r *http.Request) {
 			}
 			values = append(values, int(val))
 		}
-		AnswerQuestion(c, response, values)
+		if err := AnswerQuestion(c, question, values); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
 	}
 	
 	// Display a form to respond to a new question.
-	qid, question, err := NextQuestion(c, "survey")
+	question, q, err := NextQuestion(c, "survey")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -47,9 +59,10 @@ func survey(w http.ResponseWriter, r *http.Request) {
 	
 	err = tmpl.Execute(w, struct {
 		Question *Question
-		ID int64
-	} { question, qid })
+		ID string
+	} { q, question })
+	
 	if err != nil {
-		panic(err)
+		http.Error(w, err.Error(), 500)
 	}
 }

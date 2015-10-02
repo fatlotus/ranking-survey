@@ -12,6 +12,7 @@ import (
 func result(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	
+	// Allow file uploads of new questions.
 	if r.Method != "HEAD" && r.Method != "GET" {
 		upload, _, err := r.FormFile("file")
 		if err != nil {
@@ -34,10 +35,15 @@ func result(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		
-		AddQuestions(c, questions)
+		if err := AddQuestions(c, questions); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		http.Redirect(w, r, "/", 303)
 		return
 	}
-	
+
+	// Otherwise, serve the current question set.
 	w.Header().Add("Content-type", "text/plain")
 
 	writer := csv.NewWriter(w)
@@ -63,39 +69,4 @@ func result(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	writer.Flush()
-}
-
-func fixture(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	err := AddQuestions(c, []Question{
-		// Question{"sa", []string{"Cats"}, 5, false, []int{}},
-		// Question{"sa", []string{"Dogs"}, 5, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		Question{"sa", []string{"Cats", "Dogs"}, 0, false, []int{}},
-		// Question{"sa", []string{"Cats", "Dogs"}, 2, false, []int{}},
-	})
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	
-	http.Redirect(w, r, "/", 303)
 }

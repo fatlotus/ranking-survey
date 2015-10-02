@@ -15,41 +15,45 @@ type Question struct {
 	Response []int `datastore:"response"`
 }
 
-func NextQuestion(c appengine.Context, survey SurveyID) (int64, *Question, error) {
-	q := datastore.NewQuery("Question").
-	        Filter("survey =", survey).
-	        Filter("seen =", false).
-	        Limit(1).
-	        KeysOnly()
-	
-	keys, err := q.GetAll(c, nil)
+func NextQuestion(c appengine.Context, s SurveyID) (i string, q *Question, e error) {
+	// Fetch the next key outside of a transaction.
+	query := datastore.NewQuery("Question").
+	            Filter("survey =", s).
+	            Filter("seen =", false).
+	            Limit(1).
+	            KeysOnly()
+
+	keys, err := query.GetAll(c, nil)
 	if err != nil {
-		return 0, nil, fmt.Errorf("GetAll failed: %s", err)
+		return
 	}
 	if len(keys) == 0 {
-		return 0, nil, nil
+		return
 	}
-	
+
+	// Retreive and update the given question.
 	var question Question
 	err = datastore.RunInTransaction(c, func(c appengine.Context) error {
 		if err := datastore.Get(c, keys[0], &question); err != nil {
-			return fmt.Errorf("Get failed: %s", err)
+			return err
 		}
 		question.Seen = true
 		_, err := datastore.Put(c, keys[0], &question)
 		return err
 	}, nil)
 	if err != nil {
-		return 0, nil, err
+		return
 	}
-	
-	return keys[0].IntID(), &question, nil
+
+	i = keys[0].StringID()
+	q = &question
+	return
 }
 
-func AnswerQuestion(c appengine.Context, id int64, response []int) error {
+func AnswerQuestion(c appengine.Context, key string, response []int) error {
 	var question Question
-	key := datastore.NewKey(c, "Question", "", id, nil)
-	if err := datastore.Get(c, key, &question); err != nil {
+	dbkey := datastore.NewKey(c, "Question", key, 0, nil)
+	if err := datastore.Get(c, dbkey, &question); err != nil {
 		return err
 	}
 	
@@ -62,7 +66,7 @@ func AnswerQuestion(c appengine.Context, id int64, response []int) error {
 	}
 	
 	question.Response = response
-	_, err := datastore.Put(c, key, &question)
+	_, err := datastore.Put(c, dbkey, &question)
 	return err
 }
 
@@ -85,10 +89,34 @@ func AllQuestions(c appengine.Context, survey SurveyID) (<-chan Question) {
 }
 
 func AddQuestions(c appengine.Context, questions []Question) error {
+	// Put new versions of added queries.
 	keys := make([]*datastore.Key, len(questions))
+	counts := make(map[SurveyID]int, 0)
+
 	for i := range keys {
-		keys[i] = datastore.NewIncompleteKey(c, "Question",nil)
+		survey := questions[i].Survey
+		name := fmt.Sprintf("%s-%010d", survey, counts[survey])
+		keys[i] = datastore.NewKey(c, "Question", name, 0, nil)
+		counts[survey] += 1
 	}
-	_, err := datastore.PutMulti(c, keys, questions)
-	return err
+
+	if _, err := datastore.PutMulti(c, keys, questions); err != nil {
+		return err
+	}
+
+	// Remove old entities from the datastore.
+	for key, count := range counts {
+		name := fmt.Sprintf("%s-%010d", key, count)
+		key := datastore.NewKey(c, "Question", name, 0, nil)
+		q := datastore.NewQuery("Question").Filter("__key__ >=", key).KeysOnly()
+		keys, err := q.GetAll(c, nil)
+		if err != nil {
+			return err
+		}
+		if err := datastore.DeleteMulti(c, keys); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

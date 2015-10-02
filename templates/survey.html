@@ -9,41 +9,85 @@
 </head>
 <body>
   <div class="container">
-    <div class="panel panel-default">
+    <form method="post" class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title">Opinions</h3>
+        <h3 class="panel-title">How piratey are the following words?</h3>
       </div>
       {{if .ID}}
-        <form method="post" class="panel-body">
-          <input type="hidden" name="question" value="{{ .ID }}"/>
-          {{if eq .Question.Precision 0 }}
-            {{range $index, $choice := .Question.Choices}}
-              <p><a class="btn btn-default option"
-                  id="response-{{ $index }}-btn">{{ . }}</a></p>
-              <input type="hidden" name="response-{{ $index }}"
-                id="response-{{ $index }}"/>
-            {{end}}
+        <input type="hidden" name="question" value="{{ .ID }}"/>
+        {{if eq .Question.Precision 0 }}
+          <div class="panel-body">
+          <p>Select the most piratey first.</p>
+          <p>
+          {{range $index, $choice := .Question.Choices}}
+            <a class="btn btn-default option"
+                id="response-{{ $index }}-btn">{{ . }}</a>
+            <input type="hidden" name="response-{{ $index }}"
+              id="response-{{ $index }}"/>
+          {{end}}
+          </p>
+          </div>
+          <div class="panel-footer">
             <input type="submit" id="next" class="btn btn-primary disabled"/>
-            <script type="text/javascript">
-              configureOptions("#next", {{ len .Question.Choices }});
-            </script>
-          {{else}}
-            {{range $index, $element := .Question.Choices}}
-              <p>
-                <label>{{ . }}</label>
+          </div>
+          <script type="text/javascript">
+            configureOptions("#next", {{ len .Question.Choices }});
+          </script>
+        {{else}}
+          <table class="table">
+          <thead>
+            <tr>
+              <th>&nbsp;</th>
+              {{if le $.Question.Precision 10}}
+              <th colspan="{{ $.Question.Precision }}">
+              {{else}}
+              <th>
+              {{end}}
+                <span style="float:left">Not piratey</span>
+                <span style="float:right">Very piratey</span>
+              </th>
+            </tr>
+          </thead>
+          {{range $index, $element := .Question.Choices}}
+            <tr>
+              <th>{{ . }}</th>
+              {{if le $.Question.Precision 10}}
+                {{range loop $.Question.Precision}}
+                  <td style="text-align:center">
+                    <input type="radio" name="response-{{ $index }}"
+                    value="2"/>
+                  </td>
+                {{end}}
+              {{else}}
+              <td>
                 <input type="range" name="response-{{ $index }}"
                   min="1" max="{{ $.Question.Precision }}"/>
-              </p>
-            {{end}}
-            <input type="submit" class="btn btn-primary"/>
+              </td>
+              {{end}}
+            </tr>
           {{end}}
-        </form>
+          </table>
+          <div class="panel-footer">
+            <input type="submit" class="btn btn-primary"/>
+          </div>
+        {{end}}
       {{else}}
         <div class="panel-body">
           There are no questions left.
         </div>
       {{end}}
-    </div>
+    </form>
+    <div class="panel panel-default">
+      <form class="panel-body" method="post" action="/questions.csv"
+          enctype="multipart/form-data">
+        <a href="/questions.csv" class="btn btn-default">
+          Download Results as .CSV</a>
+        <button class="btn btn-default invisible-upload">
+          Upload New .CSV
+          <input type="file" name="file"
+            onchange="if (this.value) this.parentNode.parentNode.submit()"/>
+        </button>
+      </form>
   </div>
 </body>
 </html>
