@@ -1,4 +1,4 @@
-application: survey-app
+application: ranking-survey
 runtime: go
 api_version: go1
 version: master
