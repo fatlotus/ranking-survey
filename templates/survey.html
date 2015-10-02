@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Survey Service</title>
+  <link rel="stylesheet" href="static/bootstrap.min.css"/>
+  <link rel="stylesheet" href="static/styles.css"/>
+  <script src="static/main.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Opinions</h3>
+      </div>
+      {{if .ID}}
+        <form method="post" class="panel-body">
+          <input type="hidden" name="question" value="{{ .ID }}"/>
+          {{if eq .Question.Precision 0 }}
+            {{range $index, $choice := .Question.Choices}}
+              <p><a class="btn btn-default option"
+                  id="response-{{ $index }}-btn">{{ . }}</a></p>
+              <input type="hidden" name="response-{{ $index }}"
+                id="response-{{ $index }}"/>
+            {{end}}
+            <input type="submit" id="next" class="btn btn-primary disabled"/>
+            <script type="text/javascript">
+              configureOptions("#next", {{ len .Question.Choices }});
+            </script>
+          {{else}}
+            {{range $index, $element := .Question.Choices}}
+              <p>
+                <label>{{ . }}</label>
+                <input type="range" name="response-{{ $index }}"
+                  min="1" max="{{ $.Question.Precision }}"/>
+              </p>
+            {{end}}
+            <input type="submit" class="btn btn-primary"/>
+          {{end}}
+        </form>
+      {{else}}
+        <div class="panel-body">
+          There are no questions left.
+        </div>
+      {{end}}
+    </div>
+  </div>
+</body>
+</html>
