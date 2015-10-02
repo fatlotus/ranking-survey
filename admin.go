@@ -1,8 +1,7 @@
-package main
+package rankings
 
 import (
 	"net/http"
-	"appengine"
 	"fmt"
 	"strings"
 	"encoding/csv"
@@ -10,8 +9,6 @@ import (
 )
 
 func result(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	
 	// Allow file uploads of new questions.
 	if r.Method != "HEAD" && r.Method != "GET" {
 		upload, _, err := r.FormFile("file")
@@ -35,7 +32,7 @@ func result(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		
-		if err := AddQuestions(c, questions); err != nil {
+		if err := AddQuestions(r, questions); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
@@ -49,7 +46,7 @@ func result(w http.ResponseWriter, r *http.Request) {
 	writer := csv.NewWriter(w)
 	writer.Write([]string {"choices", "range"})
 
-	for question := range AllQuestions(c, "survey") {
+	for question := range AllQuestions(r, "survey") {
 		
 		response := make([]string, len(question.Choices))
 		for i, choice := range question.Choices {

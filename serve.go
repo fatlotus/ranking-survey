@@ -1,29 +1,32 @@
-package main
+package rankings
 
 import (
 	"net/http"
-	"appengine"
 	"fmt"
 	"strconv"
 	"html/template"
+	"github.com/elazarl/go-bindata-assetfs"
 )
 
-func init() {
-	http.HandleFunc("/", survey)
-	http.Handle("/static", http.FileServer(http.Dir("./static/")))
-	http.HandleFunc("/questions.csv", result)
+//go:generate go-bindata -pkg $GOPACKAGE -o assets.go static/ templates/
+
+func MakeHandler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", survey)
+	mux.Handle("/static/", http.FileServer(
+		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: ""}))
+	mux.HandleFunc("/questions.csv", result)
+	return mux
 }
 
-var tmpl = template.Must(template.New("survey.html").Funcs(
+var tmpl = template.Must(template.New("survey").Funcs(
 	template.FuncMap{
 		"loop": func(n int) []string {
 			return make([]string, n)
 		},
-	}).ParseFiles("templates/survey.html"))
+	}).Parse(string(MustAsset("templates/survey.html"))))
 
 func survey(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -42,14 +45,14 @@ func survey(w http.ResponseWriter, r *http.Request) {
 			}
 			values = append(values, int(val))
 		}
-		if err := AnswerQuestion(c, question, values); err != nil {
+		if err := AnswerQuestion(r, question, values); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
 	}
 	
 	// Display a form to respond to a new question.
-	question, q, err := NextQuestion(c, "survey")
+	question, q, err := NextQuestion(r, "survey")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

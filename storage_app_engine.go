@@ -1,21 +1,21 @@
-package main
+// +build appengine
+
+package rankings
 
 import (
 	"appengine"
 	"appengine/datastore"
+	"net/http"
 	"fmt"
 )
 
-type SurveyID string
-type Question struct {
-	Survey SurveyID `datastore:"survey"`
-	Choices []string `datastore:"choices"`
-	Precision int `datastore:"precision"`
-	Seen bool `datastore:"seen"`
-	Response []int `datastore:"response"`
+func init() {
+	http.Handle("/", MakeHandler())
 }
 
-func NextQuestion(c appengine.Context, s SurveyID) (i string, q *Question, e error) {
+func NextQuestion(r *http.Request, s SurveyID) (i string, q *Question, e error){
+	c := appengine.NewContext(r)
+	
 	// Fetch the next key outside of a transaction.
 	query := datastore.NewQuery("Question").
 	            Filter("survey =", s).
@@ -50,7 +50,9 @@ func NextQuestion(c appengine.Context, s SurveyID) (i string, q *Question, e err
 	return
 }
 
-func AnswerQuestion(c appengine.Context, key string, response []int) error {
+func AnswerQuestion(r *http.Request, key string, response []int) error {
+	c := appengine.NewContext(r)
+	
 	var question Question
 	dbkey := datastore.NewKey(c, "Question", key, 0, nil)
 	if err := datastore.Get(c, dbkey, &question); err != nil {
@@ -70,7 +72,9 @@ func AnswerQuestion(c appengine.Context, key string, response []int) error {
 	return err
 }
 
-func AllQuestions(c appengine.Context, survey SurveyID) (<-chan Question) {
+func AllQuestions(r *http.Request, survey SurveyID) (<-chan Question) {
+	c := appengine.NewContext(r)
+	
 	iterator := datastore.NewQuery("Question").Filter("survey =", survey).Run(c)
 	result := make(chan Question)
 	
@@ -88,7 +92,9 @@ func AllQuestions(c appengine.Context, survey SurveyID) (<-chan Question) {
 	return result
 }
 
-func AddQuestions(c appengine.Context, questions []Question) error {
+func AddQuestions(r *http.Request, questions []Question) error {
+	c := appengine.NewContext(r)
+	
 	// Put new versions of added queries.
 	keys := make([]*datastore.Key, len(questions))
 	counts := make(map[SurveyID]int, 0)
