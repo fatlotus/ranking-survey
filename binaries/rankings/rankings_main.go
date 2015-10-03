@@ -3,10 +3,10 @@
 package main
 
 import (
-	"github.com/fatlotus/rankings"
+	"github.com/fatlotus/rankingsurvey"
 	"net/http"
 )
 
 func main() {
-	panic(http.ListenAndServe(":8080", rankings.MakeHandler()))
+	panic(http.ListenAndServe(":8080", rankingsurvey.MakeHandler()))
 }
