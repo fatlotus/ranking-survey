@@ -1,5 +1,5 @@
 dependencies:
-  override:
+  pre:
     - curl -o ~/google_appengine_1.9.25.zip https://storage.googleapis.com/appengine-sdks/featured/google_appengine_1.9.25.zip
     - unzip -q -d ~ ~/google_appengine_1.9.25.zip
 
