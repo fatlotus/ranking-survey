@@ -1,6 +1,6 @@
 // +build !appengine
 
-package rankings
+package rankingsurvey
 
 import (
 	"errors"

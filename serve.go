@@ -1,4 +1,4 @@
-package rankings
+package rankingsurvey
 
 import (
 	"net/http"

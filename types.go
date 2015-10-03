@@ -1,4 +1,4 @@
-package rankings
+package rankingsurvey
 
 type SurveyID string
 type Question struct {

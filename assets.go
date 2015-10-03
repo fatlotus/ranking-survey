@@ -7,7 +7,7 @@
 // templates/survey.html
 // DO NOT EDIT!
 
-package rankings
+package rankingsurvey
 
 import (
 	"bytes"
