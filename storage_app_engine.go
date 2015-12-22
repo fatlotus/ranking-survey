@@ -5,124 +5,135 @@ package rankingsurvey
 import (
 	"appengine"
 	"appengine/datastore"
+	"github.com/fatlotus/collaborativepermute"
 	"net/http"
 	"fmt"
+	"strings"
+	"strconv"
+	"encoding/gob"
+	"bytes"
 )
 
 func init() {
 	http.Handle("/", MakeHandler())
 }
 
-func NextQuestion(r *http.Request, s SurveyID) (i string, q *Question, e error){
-	c := appengine.NewContext(r)
-	
-	// Fetch the next key outside of a transaction.
-	query := datastore.NewQuery("Question").
-	            Filter("survey =", s).
-	            Filter("seen =", false).
-	            Limit(1).
-	            KeysOnly()
+type State struct {
+	Data []byte
+	Options []string
+}
 
-	keys, err := query.GetAll(c, nil)
+func (s *State) Engine() (e *collaborativepermute.Engine) {
+	buf := bytes.NewBuffer(s.Data)
+	err := gob.NewDecoder(buf).Decode(&e)
 	if err != nil {
-		return
+		panic(err)
 	}
-	if len(keys) == 0 {
-		return
-	}
-
-	// Retreive and update the given question.
-	var question Question
-	err = datastore.RunInTransaction(c, func(c appengine.Context) error {
-		if err := datastore.Get(c, keys[0], &question); err != nil {
-			return err
-		}
-		question.Seen = true
-		_, err := datastore.Put(c, keys[0], &question)
-		return err
-	}, nil)
-	if err != nil {
-		return
-	}
-
-	i = keys[0].StringID()
-	q = &question
 	return
+}
+
+func (s *State) SetEngine(e *collaborativepermute.Engine) {
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(e); err != nil {
+		panic(err)
+	}
+	s.Data = buf.Bytes()
+}
+
+func NextQuestion(r *http.Request, sv SurveyID) (string, *Question, error){
+	c := appengine.NewContext(r)
+	k := datastore.NewKey(c, "State", "state", 0, nil)
+	var s State
+
+	if err := datastore.Get(c, k, &s); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return "", nil, nil
+		} else {
+			return "", nil, err
+		}
+	}
+
+	q := s.Engine().Generate(0)
+	labels := make([]string, len(q.Choices))
+	for i := range labels {
+		labels[i] = s.Options[q.Choices[i]]
+	}
+	
+	return fmt.Sprintf("%d-%d", q.Choices[0], q.Choices[1]), &Question{
+		Survey: sv,
+		Choices: labels,
+		Precision: 0,
+	}, nil
 }
 
 func AnswerQuestion(r *http.Request, key string, response []int) error {
 	c := appengine.NewContext(r)
-	
-	var question Question
-	dbkey := datastore.NewKey(c, "Question", key, 0, nil)
-	if err := datastore.Get(c, dbkey, &question); err != nil {
+	k := datastore.NewKey(c, "State", "state", 0, nil)
+
+	frags := strings.Split(key, "-")
+	if len(frags) != 2 {
+		return fmt.Errorf("invalid key %#v", key)
+	}
+
+	a, err := strconv.ParseInt(frags[0], 32, 10)
+	if err != nil {
 		return err
 	}
-	
-	if len(question.Response) != 0 {
-		return nil
+
+	b, err := strconv.ParseInt(frags[1], 32, 10)
+	if err != nil {
+		return err
 	}
-	
-	if len(question.Choices) != len(response) {
-		return nil
+
+	if response[0] == 1 {
+		a, b = b, a
 	}
-	
-	question.Response = response
-	_, err := datastore.Put(c, dbkey, &question)
-	return err
+
+	return datastore.RunInTransaction(c, func(c appengine.Context) error {
+		var s State
+		if err := datastore.Get(c, k, &s); err != nil {
+			return err
+		}
+
+		e := s.Engine()
+		e.Respond(collaborativepermute.Query{
+			User: 0,
+			Choices: []int{int(a), int(b)},
+		})
+		s.SetEngine(e)
+
+		_, err := datastore.Put(c, k, &s)
+		return err
+	}, nil)
+
 }
 
 func AllQuestions(r *http.Request, survey SurveyID) (<-chan Question) {
-	c := appengine.NewContext(r)
-	
-	iterator := datastore.NewQuery("Question").Filter("survey =", survey).Run(c)
-	result := make(chan Question)
-	
-	go func() {
-		for {
-			var question Question
-			if key, err := iterator.Next(&question); err != nil || key == nil {
-				break
-			}
-			result <- question
-		}
-		close(result)
-	}()
-	
-	return result
+	qs := make(chan Question)
+	close(qs)
+	return qs
 }
 
 func AddQuestions(r *http.Request, questions []Question) error {
 	c := appengine.NewContext(r)
-	
-	// Put new versions of added queries.
-	keys := make([]*datastore.Key, len(questions))
-	counts := make(map[SurveyID]int, 0)
+	k := datastore.NewKey(c, "State", "state", 0, nil)
 
-	for i := range keys {
-		survey := questions[i].Survey
-		name := fmt.Sprintf("%s-%010d", survey, counts[survey])
-		keys[i] = datastore.NewKey(c, "Question", name, 0, nil)
-		counts[survey] += 1
-	}
+	items := make(map[string]int)
 
-	if _, err := datastore.PutMulti(c, keys, questions); err != nil {
-		return err
-	}
-
-	// Remove old entities from the datastore.
-	for key, count := range counts {
-		name := fmt.Sprintf("%s-%010d", key, count)
-		key := datastore.NewKey(c, "Question", name, 0, nil)
-		q := datastore.NewQuery("Question").Filter("__key__ >=", key).KeysOnly()
-		keys, err := q.GetAll(c, nil)
-		if err != nil {
-			return err
-		}
-		if err := datastore.DeleteMulti(c, keys); err != nil {
-			return err
+	for _, question := range questions {
+		for _, choice := range question.Choices {
+			items[choice] = 0
 		}
 	}
 
-	return nil
+	s := new(State)
+	s.SetEngine(collaborativepermute.NewEngine(len(items), len(items)))
+	s.Options = make([]string, 0)
+
+	for option := range items {
+		s.Options = append(s.Options, option)
+	}
+
+	_, err := datastore.Put(c, k, s)
+	return err
 }
