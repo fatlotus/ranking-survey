@@ -4,9 +4,8 @@ from google.appengine.ext import ndb
 
 from flask import Flask, session, redirect, render_template, url_for, request
 
-import random
+import json, random, math
 from markupsafe import Markup
-import json
 
 from predictor import Predictor
 
@@ -14,9 +13,22 @@ app = Flask(__name__)
 
 def generate_color():
     h = random.uniform(0, 360)
-    s = random.uniform(0.2, 1.0)
-    l = random.uniform(0.2, 0.8)
+    s = random.uniform(0.4, 1.0)
+    l = random.uniform(0.4, 0.6)
     return (h, s, l)
+
+def distance((h1, s1, l1), (h2, s2, l2)):
+    dh = (h1 - h2 + 180 + 360) % 360 - 180
+    ds = s1 - s2
+    dl = l1 - l2
+
+    return math.sqrt(dh*dh + ds*ds + dl*dl)
+
+def generate_pair():
+    a, b = generate_color(), generate_color()
+    while distance(a, b) < 2.:
+        a, b = generate_color(), generate_color()
+    return a, b
 
 @app.template_global()
 def show_color((h, s, l)):
@@ -32,7 +44,7 @@ class Survey(ndb.Model):
 
     @classmethod
     def generate(klass, key, size):
-        users = [(generate_color(), generate_color()) for i in xrange(size)]
+        users = [generate_pair() for i in xrange(size)]
         things = [generate_color() for i in xrange(size)]
 
         return Survey.get_or_insert(key, predictor=Predictor(users, things))
@@ -41,7 +53,7 @@ class Survey(ndb.Model):
 from werkzeug.routing import BaseConverter
 class SurveyConverter(BaseConverter):
     def to_python(self, value):
-        return Survey.generate(value, 5)
+        return Survey.generate(value, 3)
 
     def to_url(self, value):
         return value.key.id()

@@ -25,11 +25,11 @@
   <table>
     {% for ranking in rankings %}
     <tr>
-      <th>{{show_color(ranking[0][0])}}</th>
+      <th><div>{{show_color(ranking[0][0])}}</div>.</th>
       {% for option in ranking[1] %}
-        <td>{{show_color(option[0])}} ({{"{:.2f}".format(option[1])}})</td>
+        <td><div>{{show_color(option[0])}}</div> ({{"{:.2f}".format(option[1])}})</td>
       {% endfor %}
-      <th>{{show_color(ranking[0][1])}}</th>
+      <th><div>{{show_color(ranking[0][1])}}</div>.</th>
     </tr>
     {% endfor %}
   </table>
