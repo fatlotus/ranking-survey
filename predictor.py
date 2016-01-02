@@ -2,7 +2,13 @@ import numpy
 import math
 import random
 
+
 class Predictor(object):
+
+    """
+    A Predictor runs an instance of the learning algorithm on a given input.
+    """
+
     def __init__(self, users, things):
         """
         Initialize this predictor given a list of users and things.
@@ -35,7 +41,7 @@ class Predictor(object):
 
     def _gradient_loss(self, samples):
         """
-        Jankily computes the gradient of the hinge loss of the belief matrix 
+        Jankily computes the gradient of the hinge loss of the belief matrix
         on the given samples.
         """
 
@@ -56,9 +62,9 @@ class Predictor(object):
         Updates the given belief matrix after having recevied a new sample.
         """
 
-        alphaP = (1 + math.sqrt(1 + 4*self.alpha**2)) / 2
+        alphaP = (1 + math.sqrt(1 + 4 * self.alpha**2)) / 2
         u, s, v = numpy.linalg.svd(self.z -
-            self._gradient_loss(samples) * self.nu)
+                                   self._gradient_loss(samples) * self.nu)
         for i in xrange(len(s)):
             s[i] = max(0, s[i] - self.lambd)
 
@@ -110,13 +116,14 @@ class Predictor(object):
     def ranking(self, user):
         """
         Returns the predicted ranking for a given user, in the form
-        (option, score) where score is a rough magnitude for the user's 
+        (option, score) where score is a rough magnitude for the user's
         confidence in this position.
         """
 
         u, ary = self.users.index(user), numpy.asarray(self.x)
-        indices = sorted(enumerate(ary[u,:]), key=lambda (i, x): -x)
+        indices = sorted(enumerate(ary[u, :]), key=lambda i_x: -i_x[1])
         return [(self.things[i], x) for i, x in indices]
+
 
 def main():
     predictor = Predictor(

@@ -8,19 +8,48 @@
     width: 25px;
     height: 25px;
   }
+  .column {
+    display: inline-block;
+  }
+  .column button {
+    display: block;
+  }
   </style>
 </head>
 <body>
-  <h1>On a scale from {{show_color(user[0])}} to {{show_color(user[1])}} — which is more {{show_color(user[0])}}?</h1>
   <form method="post">
     <input type="hidden" name="user" value="{{ dumps(user) }}"/>
     <input type="hidden" name="a" value="{{ dumps(a) }}"/>
     <input type="hidden" name="b" value="{{ dumps(b) }}"/>
+  {% if suite == "youtube" %}
+  <h1>Which do you prefer?</h2>
+  <div class="column">
+    {{show_video(a)}}
     <button type="submit" name="choice"
-      value="{{ dumps(a) }}">{{show_color(a)}}</button>
+      value="{{ dumps(a) }}">The video on the left</button>
+  </div>
+  <div class="column">
+    {{show_video(b)}}
     <button type="submit" name="choice"
-      value="{{ dumps(b) }}">{{show_color(b)}}</button>
-  </form>
+      value="{{ dumps(b) }}">The video on the right</button>
+  </div>
+  <h2>Rankings</h2>
+  <table>
+    {% for ranking in rankings %}
+    <tr>
+      <th>#{{ ranking[0] }}</th>
+      {% for option in ranking[1] %}
+        <td><div>{{option[0]}}</div> ({{"{:.2f}".format(option[1])}})</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <h1>On a scale from {{show_color(user[0])}} to {{show_color(user[1])}} — which is more {{show_color(user[0])}}?</h1>
+  <button type="submit" name="choice"
+    value="{{ dumps(a) }}">{{show_color(a)}}</button>
+  <button type="submit" name="choice"
+    value="{{ dumps(b) }}">{{show_color(b)}}</button>
   <h2>Rankings</h2>
   <table>
     {% for ranking in rankings %}
@@ -33,5 +62,7 @@
     </tr>
     {% endfor %}
   </table>
+  {% endif %}
+  </form>
 </body>
 </html>
