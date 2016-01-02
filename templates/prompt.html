@@ -39,7 +39,7 @@
     <tr>
       <th>#{{ ranking[0] }}</th>
       {% for option in ranking[1] %}
-        <td><div>{{option[0]}}</div> ({{"{:.2f}".format(option[1])}})</td>
+        <td><div>{{option[0][1]}}</div> ({{"{:.2f}".format(option[1])}})</td>
       {% endfor %}
     </tr>
     {% endfor %}

@@ -17,12 +17,14 @@ from predictor import Predictor
 app = Flask(__name__)
 
 YOUTUBE_VIDEOS = [
-    "PHAc3_MEjgQ",  # cat
-    "YtEhX7mhDJc",  # cat
-    "6ztm7YkLElI",  # dog
-    "kMhw5MFYU0s",  # dog
-    "2mUBHsxoK7I",  # parrot
-    "Rpu-cNjT2Dg",  # parrot
+    ("PHAc3_MEjgQ", "Funny Cats Acting Like..."),
+    ("YtEhX7mhDJc", "Cat + Monkey"),
+
+    ("6ztm7YkLElI", "World's Most Amazing Dogs"),
+    ("kMhw5MFYU0s", "Dogs Who Fail At"),
+
+    ("2mUBHsxoK7I", "The Funniest Parrots ever"),
+    ("Rpu-cNjT2Dg", "Funny Parrot Videos"),
 ]
 
 
@@ -71,15 +73,15 @@ def show_color(color):
 
 
 @app.template_global()
-def show_video(video_id):
+def show_video(video):
     """
     Displays a video in an embed box.
     """
 
     return Markup(
         """<iframe width="560" height="315"
-             src="https://www.youtube.com/embed/{}">
-           </iframe>""").format(video_id)
+             src="https://www.youtube.com/embed/{0}">
+           </iframe>""").format(*video)
 
 
 @app.template_global()
@@ -149,7 +151,8 @@ def display_question(survey):
     """
 
     pred = survey.predictor
-    user, a, b = pred.generate()
+    user = pred.users[int(request.args.get("user", "0"))]
+    user, a, b = pred.generate(mask=lambda u, a, b: u == user)
     rankings = [(u, pred.ranking(u)) for u in pred.users]
     return render_template("prompt.html", suite=survey.suite,
                            user=user, a=a, b=b, rankings=rankings)
