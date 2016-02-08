@@ -3,25 +3,32 @@
 package rankingsurvey
 
 import (
-	"appengine"
-	"appengine/datastore"
-	"net/http"
 	"fmt"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/user"
+	"net/http"
+	"time"
 )
 
 func init() {
 	http.Handle("/", MakeHandler())
 }
 
-func NextQuestion(r *http.Request, s SurveyID) (i string, q *Question, e error){
+func IsAdmin(r *http.Request) bool {
+	return user.IsAdmin(appengine.NewContext(r))
+}
+
+func NextQuestion(r *http.Request, s SurveyID) (i string, q *Question, e error) {
 	c := appengine.NewContext(r)
-	
+
 	// Fetch the next key outside of a transaction.
 	query := datastore.NewQuery("Question").
-	            Filter("survey =", s).
-	            Filter("seen =", false).
-	            Limit(1).
-	            KeysOnly()
+		Filter("survey =", s).
+		Filter("seen <=", time.Unix(0, 0)).
+		Limit(1).
+		KeysOnly()
 
 	keys, err := query.GetAll(c, nil)
 	if err != nil {
@@ -33,11 +40,11 @@ func NextQuestion(r *http.Request, s SurveyID) (i string, q *Question, e error){
 
 	// Retreive and update the given question.
 	var question Question
-	err = datastore.RunInTransaction(c, func(c appengine.Context) error {
+	err = datastore.RunInTransaction(c, func(c context.Context) error {
 		if err := datastore.Get(c, keys[0], &question); err != nil {
 			return err
 		}
-		question.Seen = true
+		question.Seen = time.Now()
 		_, err := datastore.Put(c, keys[0], &question)
 		return err
 	}, nil)
@@ -52,32 +59,33 @@ func NextQuestion(r *http.Request, s SurveyID) (i string, q *Question, e error){
 
 func AnswerQuestion(r *http.Request, key string, response []int) error {
 	c := appengine.NewContext(r)
-	
+
 	var question Question
 	dbkey := datastore.NewKey(c, "Question", key, 0, nil)
 	if err := datastore.Get(c, dbkey, &question); err != nil {
 		return err
 	}
-	
+
 	if len(question.Response) != 0 {
 		return nil
 	}
-	
+
 	if len(question.Choices) != len(response) {
 		return nil
 	}
-	
+
+	question.Responded = time.Now()
 	question.Response = response
 	_, err := datastore.Put(c, dbkey, &question)
 	return err
 }
 
-func AllQuestions(r *http.Request, survey SurveyID) (<-chan Question) {
+func AllQuestions(r *http.Request, survey SurveyID) <-chan Question {
 	c := appengine.NewContext(r)
-	
+
 	iterator := datastore.NewQuery("Question").Filter("survey =", survey).Run(c)
 	result := make(chan Question)
-	
+
 	go func() {
 		for {
 			var question Question
@@ -88,13 +96,13 @@ func AllQuestions(r *http.Request, survey SurveyID) (<-chan Question) {
 		}
 		close(result)
 	}()
-	
+
 	return result
 }
 
 func AddQuestions(r *http.Request, questions []Question) error {
 	c := appengine.NewContext(r)
-	
+
 	// Put new versions of added queries.
 	keys := make([]*datastore.Key, len(questions))
 	counts := make(map[SurveyID]int, 0)

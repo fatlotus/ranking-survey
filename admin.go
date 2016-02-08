@@ -1,14 +1,17 @@
 package rankingsurvey
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
-	"fmt"
-	"strings"
-	"encoding/csv"
-	"strconv"
 )
 
 func result(w http.ResponseWriter, r *http.Request) {
+	if !IsAdmin(r) {
+		http.Error(w, "forbidden", 403)
+		return
+	}
+
 	// Allow file uploads of new questions.
 	if r.Method != "HEAD" && r.Method != "GET" {
 		upload, _, err := r.FormFile("file")
@@ -16,22 +19,21 @@ func result(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
-		reader := csv.NewReader(upload)
-		rows, err := reader.ReadAll()
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
-		questions := make([]Question, len(rows) - 1)
-		for idx, row := range rows[1:] {
-			precision, _ := strconv.ParseInt(row[1], 10, 64)
-			questions[idx] = Question{
-				Survey: "survey",
-				Choices: strings.Split(row[0], ";"),
-				Precision: int(precision),
+
+		decoder := json.NewDecoder(upload)
+		questions := make([]Question, 0)
+		for {
+			var question Question
+			err := decoder.Decode(&question)
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
 			}
+			questions = append(questions, question)
 		}
-		
+
 		if err := AddQuestions(r, questions); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -43,27 +45,11 @@ func result(w http.ResponseWriter, r *http.Request) {
 	// Otherwise, serve the current question set.
 	w.Header().Add("Content-type", "text/plain")
 
-	writer := csv.NewWriter(w)
-	writer.Write([]string {"choices", "range"})
-
+	encoder := json.NewEncoder(w)
 	for question := range AllQuestions(r, "survey") {
-		
-		response := make([]string, len(question.Choices))
-		for i, choice := range question.Choices {
-			if len(question.Response) == len(question.Choices) {
-				response[i] = fmt.Sprintf("%s:%d", choice, question.Response[i])
-			} else if question.Seen {
-				response[i] = fmt.Sprintf("%s:?", choice)
-			} else {
-				response[i] = choice
-			}
+		err := encoder.Encode(&question)
+		if err != nil {
+			panic(err)
 		}
-		
-		writer.Write([]string {
-			strings.Join(response, ";"),
-			strconv.FormatInt(int64(question.Precision), 10),
-		})
 	}
-	
-	writer.Flush()
 }

@@ -1,11 +1,11 @@
 package rankingsurvey
 
 import (
-	"net/http"
 	"fmt"
-	"strconv"
-	"html/template"
 	"github.com/elazarl/go-bindata-assetfs"
+	"html/template"
+	"net/http"
+	"strconv"
 )
 
 //go:generate go-bindata -pkg $GOPACKAGE -o assets.go static/ templates/
@@ -24,6 +24,12 @@ var tmpl = template.Must(template.New("survey").Funcs(
 		"loop": func(n int) []string {
 			return make([]string, n)
 		},
+		"add1": func(n int) int {
+			return n + 1
+		},
+		"asHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
 	}).Parse(string(MustAsset("templates/survey.html"))))
 
 func survey(w http.ResponseWriter, r *http.Request) {
@@ -31,13 +37,13 @@ func survey(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	
+
 	// Process existing response, if one is given.
 	question := r.FormValue("question")
 	if question != "" {
 		values := make([]int, 0)
-		
-		for i := 0;; i++ {
+
+		for i := 0; ; i++ {
 			sval := r.FormValue(fmt.Sprintf("response-%d", i))
 			val, err := strconv.ParseInt(sval, 10, 64)
 			if err != nil {
@@ -50,21 +56,22 @@ func survey(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	// Display a form to respond to a new question.
 	question, q, err := NextQuestion(r, "survey")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	
+
 	w.Header().Set("Content-type", "text/html")
-	
+
 	err = tmpl.Execute(w, struct {
 		Question *Question
-		ID string
-	} { q, question })
-	
+		ID       string
+		Admin    bool
+	}{q, question, IsAdmin(r)})
+
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}

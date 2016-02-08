@@ -1,10 +1,15 @@
 package rankingsurvey
 
+import (
+	"time"
+)
+
 type SurveyID string
 type Question struct {
-	Survey SurveyID `datastore:"survey"`
-	Choices []string `datastore:"choices"`
-	Precision int `datastore:"precision"`
-	Seen bool `datastore:"seen"`
-	Response []int `datastore:"response"`
+	Survey    SurveyID  `datastore:"survey" json:"survey"`
+	Choices   []string  `datastore:"choices" json:"choices"`
+	Precision int       `datastore:"precision" json:"precision"`
+	Seen      time.Time `datastore:"seen" json:"seenTime"`
+	Responded time.Time `datastore:"seenTime" json:"respondedTime"`
+	Response  []int     `datastore:"response" json:"response"`
 }
