@@ -15,70 +15,55 @@
       </div>
       {{if .ID}}
         <input type="hidden" name="question" value="{{ .ID }}"/>
-        {{if eq .Question.Precision 0 }}
-          <div class="panel-body">
-          <p>Select the funniest first.</p>
-          <p>
-          {{range $index, $choice := .Question.Choices}}
-            <a class="btn btn-default option"
-                id="response-{{ $index }}-btn">{{ . | asHTML }}</a>
-            <input type="hidden" name="response-{{ $index }}"
-              id="response-{{ $index }}"/>
-          {{end}}
-          </p>
-          </div>
-          <div class="panel-footer">
-            <input type="submit" id="next" class="btn btn-primary disabled"/>
-          </div>
-          <script type="text/javascript">
-            configureOptions("#next", {{ len .Question.Choices }});
-          </script>
-        {{else}}
-          <table class="table">
-          <thead>
-            <tr>
-              <th>&nbsp;</th>
-              {{if le $.Question.Precision 10}}
-              <th colspan="{{ $.Question.Precision }}">
-              {{else}}
-              <th>
-              {{end}}
-                <span style="float:left">Not funny</span>
-                <span style="float:right">Very funny</span>
-              </th>
-            </tr>
+        <table class="table">
+        <thead>
+          <tr>
+            <th>&nbsp;</th>
             {{if le $.Question.Precision 10}}
-            <tr>
-              <th>&nbsp;</th>
-              {{range $prec, $elem := loop $.Question.Precision}}
-                <td style="text-align:center">{{ add1 $prec }}</td>
-              {{end}}
-            </tr>
+            <th colspan="{{ $.Question.Precision }}">
+            {{else}}
+            <th>
             {{end}}
-          </thead>
-          {{range $index, $element := .Question.Choices}}
-            <tr>
-              <th>{{ asHTML . }}</th>
-              {{if le $.Question.Precision 10}}
-                {{range $prec, $elem := loop $.Question.Precision}}
-                  <td style="text-align:center">
-                    <input type="radio" name="response-{{ $index }}"
-                    value="{{ $prec }}"/>
-                  </td>
-                {{end}}
+              {{if $.Question.Exclusive}}
+              <span style="float:left">Not funny</span>
+              <span style="float:right">Very funny</span>
               {{else}}
-              <td>
-                <input type="range" name="response-{{ $index }}"
-                  min="1" max="{{ $.Question.Precision }}"/>
-              </td>
+              <span style="float:left">Least funny</span>
+              <span style="float:right">Most funny</span>
               {{end}}
-            </tr>
+            </th>
+          </tr>
+          {{if le $.Question.Precision 10}}
+          <tr>
+            <th>&nbsp;</th>
+            {{range $prec, $elem := loop $.Question.Precision}}
+              <td style="text-align:center">{{ add1 $prec }}</td>
+            {{end}}
+          </tr>
           {{end}}
-          </table>
-          <div class="panel-footer">
-            <input type="submit" class="btn btn-primary"/>
-          </div>
+        </thead>
+        {{range $index, $element := .Question.Choices}}
+          <tr>
+            <th>{{ asHTML . }}</th>
+            {{if le $.Question.Precision 10}}
+              {{range $prec, $elem := loop $.Question.Precision}}
+                <td style="text-align:center">
+                  <input type="radio" name="response-{{ $index }}"
+                  value="{{ $prec }}"/>
+                </td>
+              {{end}}
+            {{else}}
+            <td>
+              <input type="range" name="response-{{ $index }}"
+                min="1" max="{{ $.Question.Precision }}"/>
+            </td>
+            {{end}}
+          </tr>
         {{end}}
+        </table>
+        <div class="panel-footer">
+          <input type="submit" class="btn btn-primary"/>
+        </div>
       {{else}}
         <div class="panel-body">
           There are no questions left.

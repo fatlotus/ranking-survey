@@ -10,6 +10,7 @@ for i in xrange(100):
     question = {
         "survey": "survey",
         "choices": videos,
-        "precision": random.choice([0, 3, 8, 12]),
+        "precision": random.choice([3, 8, 12]),
+        "exclusive": random.choice([False, True]),
     }
     print json.dumps(question)
