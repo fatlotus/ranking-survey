@@ -1,31 +1,68 @@
-var configureOptions = function(finishSel, count) {
-  var nextRank = count;
-  var finishButton = document.querySelector(finishSel);
-  
-  var text = function(str) {
-    return document.createTextNode(str);
+var configureOptions = function(exclusive) {
+  var buttons = document.querySelectorAll(".radio-button");
+  var hiddens = document.querySelectorAll(".response-field");
+  var submitButton = document.querySelector("[type=submit]");
+
+  var deselect = function(sel) {
+    [].forEach.call(document.querySelectorAll(sel), function(button) {
+      button.className = "btn btn-default";
+    });
   }
-  
-  for (var i = 0; i < count; i++) {
-    (function(i) {
-      var hiddenInput = document.getElementById("response-" + i);
-      var selectButton = document.getElementById("response-" + i + "-btn");
-    
-      selectButton.onclick = function() {
-        if (selectButton.getAttribute("class").indexOf("disabled") > 0)
-          return;
-        selectButton.appendChild(text(" #" + (count - nextRank + 1)));
-        if (nextRank == count)
-          selectButton.appendChild(text(" (most)"));
-        else if (nextRank == 1)
-          selectButton.appendChild(text(" (least)"));
-        hiddenInput.value = nextRank--;
-        selectButton.setAttribute("class",
-          selectButton.getAttribute("class") + " disabled");
-        if (nextRank == 0)
-          finishButton.setAttribute("class",
-            finishButton.getAttribute("class").replace("disabled", ""));
+
+  var candidate = function(but) { return but.getAttribute("data-candidate"); }
+  var preference = function(but) { return but.getAttribute("data-preference"); }
+  var selected = function(but) { return but.className.indexOf("primary") >= 0; }
+
+  var update = function() {
+
+    var values = Array(hiddens.length);
+    var preferences = Array(buttons.length / hiddens.length);
+
+    [].forEach.call(buttons, function(button) {
+      if (selected(button)) {
+        values[candidate(button)] = preference(button);
+        if (exclusive)
+          preferences[preference(button)] = true;
       }
-    })(i);
-  }
+    });
+
+    [].forEach.call(buttons, function(button) {
+      if (!selected(button)) {
+        if (preferences[preference(button)] || values[candidate(button)]) {
+          button.className = "btn btn-default";
+        } else {
+          button.className = "btn btn-warning";
+        }
+      }
+    });
+
+    var withValues = 0;
+
+    [].forEach.call(hiddens, function(hidden) {
+      hidden.value = values[candidate(hidden)];
+      if (values[candidate(hidden)])
+        withValues++;
+    });
+
+    var leftOver = hiddens.length - withValues;
+    submitButton.disabled = leftOver > 0;
+    submitButton.value = leftOver ? "Submit (" + leftOver + " left)" : "Submit";
+  };
+
+  [].forEach.call(buttons, function(button) {
+    button.addEventListener("click", function(e) {
+      deselect(".btn[data-candidate=\"" + candidate(this) + "\"]");
+      if (exclusive)
+        deselect(".btn[data-preference=\"" + preference(this) + "\"]");
+
+      this.className = "btn btn-primary";
+
+      update();
+
+      e.preventDefault();
+      return false;
+    });
+  });
+
+  update();
 };

@@ -18,24 +18,22 @@
         <table class="table">
         <thead>
           <tr>
-            <th>&nbsp;</th>
             {{if le $.Question.Precision 10}}
             <th colspan="{{ $.Question.Precision }}">
             {{else}}
             <th>
             {{end}}
               {{if $.Question.Exclusive}}
-              <span style="float:left">Not funny</span>
-              <span style="float:right">Very funny</span>
-              {{else}}
               <span style="float:left">Least funny</span>
               <span style="float:right">Most funny</span>
+              {{else}}
+              <span style="float:left">Not very funny</span>
+              <span style="float:right">Very funny</span>
               {{end}}
             </th>
           </tr>
           {{if le $.Question.Precision 10}}
           <tr>
-            <th>&nbsp;</th>
             {{range $prec, $elem := loop $.Question.Precision}}
               <td style="text-align:center">{{ add1 $prec }}</td>
             {{end}}
@@ -44,12 +42,24 @@
         </thead>
         {{range $index, $element := .Question.Choices}}
           <tr>
-            <th>{{ asHTML . }}</th>
             {{if le $.Question.Precision 10}}
+            <td colspan="{{ $.Question.Precision }}">{{ asHTML . }}</td>
+            {{else}}
+            <td>{{ asHTML . }}</td>
+            {{end}}
+          </tr>
+          <tr>
+            {{if le $.Question.Precision 10}}
+              <input type="hidden" id="response-{{ $index }}"
+                  name="response-{{ $index }}"
+                  class="response-field"
+                  data-candidate="{{ $index }}"/>
               {{range $prec, $elem := loop $.Question.Precision}}
                 <td style="text-align:center">
-                  <input type="radio" name="response-{{ $index }}"
-                  value="{{ $prec }}"/>
+                  <button data-candidate="{{ $index }}"
+                    data-preference="{{ $prec }}"
+                    class="btn btn-warning radio-button">
+                    {{add1 $prec}}</button>
                 </td>
               {{end}}
             {{else}}
@@ -84,5 +94,8 @@
       </form>
   </div>
   {{end}}
+  <script type="text/javascript">
+  configureOptions({{$.Question.Exclusive}})
+  </script>
 </body>
 </html>
