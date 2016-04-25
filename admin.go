@@ -12,6 +12,8 @@ func result(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	survey := SurveyID(r.URL.Path[1 : len(r.URL.Path)-5])
+
 	// Allow file uploads of new questions.
 	if r.Method != "HEAD" && r.Method != "GET" {
 		upload, _, err := r.FormFile("file")
@@ -46,7 +48,7 @@ func result(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-type", "text/plain")
 
 	encoder := json.NewEncoder(w)
-	for question := range AllQuestions(r, "survey") {
+	for question := range AllQuestions(r, survey) {
 		err := encoder.Encode(&question)
 		if err != nil {
 			panic(err)

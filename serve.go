@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 //go:generate go-bindata -pkg $GOPACKAGE -o assets.go static/ templates/
@@ -15,7 +16,6 @@ func MakeHandler() http.Handler {
 	mux.HandleFunc("/", survey)
 	mux.Handle("/static/", http.FileServer(
 		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: ""}))
-	mux.HandleFunc("/questions.csv", result)
 	return mux
 }
 
@@ -30,12 +30,26 @@ var tmpl = template.Must(template.New("survey").Funcs(
 		"asHTML": func(s string) template.HTML {
 			return template.HTML(s)
 		},
+		"pairwise": func(q Question) bool {
+			return q.Exclusive && len(q.Choices) == 2 && q.Precision == 2
+		},
+		"contpairwise": func(q Question) bool {
+			return q.Exclusive && len(q.Choices) == 2 && q.Precision > 10
+		},
+		"binary": func(q Question) bool {
+			return len(q.Choices) == 1 && q.Precision == 2
+		},
 	}).Parse(string(MustAsset("templates/survey.html"))))
 
 func survey(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+	if strings.HasSuffix(r.URL.Path, ".json") {
+		result(w, r)
 		return
+	}
+
+	survey := SurveyID(r.URL.Path[1:])
+	if survey == SurveyID("") {
+		survey = SurveyID("survey")
 	}
 
 	// Process existing response, if one is given.
@@ -58,7 +72,7 @@ func survey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Display a form to respond to a new question.
-	question, q, err := NextQuestion(r, "survey")
+	question, q, err, complete, total := NextQuestion(r, survey)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -67,10 +81,13 @@ func survey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "text/html")
 
 	err = tmpl.Execute(w, struct {
+		Survey   SurveyID
 		Question *Question
 		ID       string
 		Admin    bool
-	}{q, question, IsAdmin(r)})
+		Number   int
+		Total    int
+	}{survey, q, question, IsAdmin(r), total - complete + 1, total})
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)

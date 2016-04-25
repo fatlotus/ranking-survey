@@ -3,77 +3,163 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Survey Service</title>
-  <link rel="stylesheet" href="static/bootstrap.min.css"/>
-  <link rel="stylesheet" href="static/styles.css"/>
+  <link rel="stylesheet" href="/static/bootstrap.min.css"/>
+  <link rel="stylesheet" href="/static/styles.css"/>
   <script src="static/main.js"></script>
 </head>
 <body>
   <div class="container">
     <form method="post" class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title">How funny are the following things?</h3>
+        <h3 class="panel-title">
+        {{if not $.Question}}
+          Please rank how funny the following things are.
+        {{else if pairwise $.Question}}
+          Which one is funnier?
+        {{else if contpairwise $.Question}}
+          Which one is funnier?
+        {{else if binary $.Question}}
+          Is this funny?
+        {{else if $.Question.Exclusive}}
+          Please rank how funny the following things are.
+        {{else}}
+          Please rate how funny the following things are.
+        {{end}}
+        {{if $.Question}}
+          (#{{.Number}} of {{.Total}})
+        {{end}}
+        </h3>
       </div>
       {{if .ID}}
         <input type="hidden" name="question" value="{{ .ID }}"/>
-        <table class="table">
-        <thead>
-          <tr>
-            {{if le $.Question.Precision 10}}
-            <th colspan="{{ $.Question.Precision }}">
-            {{else}}
-            <th>
-            {{end}}
-              {{if $.Question.Exclusive}}
-              <span style="float:left">Least funny</span>
-              <span style="float:right">Most funny</span>
-              {{else}}
-              <span style="float:left">Not very funny</span>
-              <span style="float:right">Very funny</span>
+        {{if pairwise $.Question }}
+          <table class="table hidden-xs hidden-sm">
+            <tr>
+              {{range $index, $element := .Question.Choices}}
+                <td style="width:50%;text-align:center">{{ asHTML . }}</td>
               {{end}}
-            </th>
-          </tr>
-          {{if le $.Question.Precision 10}}
-          <tr>
-            {{range $prec, $elem := loop $.Question.Precision}}
-              <td style="text-align:center">{{ add1 $prec }}</td>
-            {{end}}
-          </tr>
-          {{end}}
-        </thead>
-        {{range $index, $element := .Question.Choices}}
-          <tr>
-            {{if le $.Question.Precision 10}}
-            <td colspan="{{ $.Question.Precision }}">{{ asHTML . }}</td>
-            {{else}}
-            <td>{{ asHTML . }}</td>
-            {{end}}
-          </tr>
-          <tr>
-            {{if le $.Question.Precision 10}}
-              <input type="hidden" id="response-{{ $index }}"
-                  name="response-{{ $index }}"
-                  class="response-field"
-                  data-candidate="{{ $index }}"/>
-              {{range $prec, $elem := loop $.Question.Precision}}
-                <td style="text-align:center">
-                  <button data-candidate="{{ $index }}"
-                    data-preference="{{ $prec }}"
-                    class="btn btn-warning radio-button">
-                    {{add1 $prec}}</button>
+            </tr>
+            <tr>
+              {{range $index, $element := .Question.Choices}}
+                <td>
+                  <button class="btn btn-primary"
+                     name="response-{{$index}}"
+                     value="1">This one is funnier.</button>
                 </td>
               {{end}}
-            {{else}}
-            <td>
-              <input type="range" name="response-{{ $index }}"
-                min="1" max="{{ $.Question.Precision }}"/>
-            </td>
+            </tr>
+          </table>
+          <table class="table hidden-md hidden-lg">
+            {{range $index, $element := .Question.Choices}}
+              <tr>
+                <td style="text-align:center">{{ asHTML . }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <button class="btn btn-primary"
+                     name="response-{{$index}}"
+                     value="1">This one is funnier.</button>
+                </td>
+              </tr>
             {{end}}
-          </tr>
+          </table>
+          <input type="hidden" name="response-0" value="0"/>
+          <input type="hidden" name="response-1" value="0"/>
+        {{else if contpairwise $.Question}}
+          <table class="table">
+            <tr>
+              {{range $index, $element := .Question.Choices}}
+                <td style="text-align:center">{{ asHTML . }}</td>
+              {{end}}
+            </tr>
+            <tr>
+              <td colspan="2">
+                <input type="range" name="response-0" min="0"
+                       max="{{$.Question.Precision}}"
+                       onchange="document.getElementById('response-1').value = this.max - this.value;"/>
+                <input type="hidden" name="response-1" id="response-1"
+                       value=""/>
+              </td>
+            </tr>
+          </table>
+          <div class="panel-footer">
+            <input type="submit" class="btn btn-primary"/>
+          </div>
+        {{else}}
+          <table class="table">
+          {{if not (binary $.Question)}}
+          <thead>
+            <tr>
+              {{if le $.Question.Precision 10}}
+              <th colspan="{{ $.Question.Precision }}">
+              {{else}}
+              <th>
+              {{end}}
+                {{if $.Question.Exclusive}}
+                <span style="float:left">Least funny</span>
+                <span style="float:right">Most funny</span>
+                {{else}}
+                <span style="float:left">Not very funny</span>
+                <span style="float:right">Very funny</span>
+                {{end}}
+              </th>
+            </tr>
+            {{if le $.Question.Precision 10}}
+            <tr>
+              {{range $prec, $elem := loop $.Question.Precision}}
+                <td style="text-align:center">{{ add1 $prec }}</td>
+              {{end}}
+            </tr>
+            {{end}}
+          </thead>
+          {{end}}
+          {{range $index, $element := .Question.Choices}}
+            <tr>
+              {{if le $.Question.Precision 10}}
+              <td colspan="{{ $.Question.Precision }}" style="text-align:center">
+                {{ asHTML . }}</td>
+              {{else}}
+              <td style="text-align:center">{{ asHTML . }}</td>
+              {{end}}
+            </tr>
+            {{if not (binary $.Question)}}
+            <tr>
+              {{if le $.Question.Precision 10}}
+                <input type="hidden" id="response-{{ $index }}"
+                    name="response-{{ $index }}"
+                    class="response-field"
+                    data-candidate="{{ $index }}"/>
+                {{range $prec, $elem := loop $.Question.Precision}}
+                  <td style="text-align:center">
+                    <button data-candidate="{{ $index }}"
+                      data-preference="{{ $prec }}"
+                      class="btn btn-warning radio-button">
+                      {{add1 $prec}}</button>
+                  </td>
+                {{end}}
+              {{else}}
+              <td>
+                <input type="range" name="response-{{ $index }}"
+                  min="1" max="{{ $.Question.Precision }}"/>
+              </td>
+              {{end}}
+            </tr>
+            {{end}}
+          {{end}}
+          </table>
+          {{if binary $.Question}}
+          <div class="panel-footer">
+            <button type="submit" class="btn btn-primary"
+              name="response-0" value="1">No</button>
+            <button type="submit" class="btn btn-primary"
+              name="response-0" value="1" style="float:right">Yes</button>
+          </div>
+          {{else}}
+          <div class="panel-footer">
+            <input type="submit" class="btn btn-primary"/>
+          </div>
+          {{end}}
         {{end}}
-        </table>
-        <div class="panel-footer">
-          <input type="submit" class="btn btn-primary"/>
-        </div>
       {{else}}
         <div class="panel-body">
           There are no questions left.
@@ -82,12 +168,12 @@
     </form>
     {{if .Admin}}
     <div class="panel panel-default">
-      <form class="panel-body" method="post" action="/questions.csv"
+      <form class="panel-body" method="post" action="/{{$.Survey}}.json"
           enctype="multipart/form-data">
-        <a href="/questions.csv" class="btn btn-default">
-          Download Results as .CSV</a>
+        <a href="/{{$.Survey}}.json" class="btn btn-default">
+          Download Results as .JSON</a>
         <button class="btn btn-default invisible-upload">
-          Upload New .CSV
+          Upload New .JSON
           <input type="file" name="file"
             onchange="if (this.value) this.parentNode.parentNode.submit()"/>
         </button>

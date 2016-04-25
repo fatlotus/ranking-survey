@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type sharedState struct {
@@ -14,24 +15,26 @@ type sharedState struct {
 	sync.Mutex
 }
 
-func IsAdmin(r *http.Request) {
+func IsAdmin(r *http.Request) bool {
 	return true
 }
 
 var globalState sharedState
 
-func NextQuestion(r *http.Request, s SurveyID) (string, *Question, error) {
+func NextQuestion(r *http.Request, s SurveyID) (string, *Question, error, int, int) {
 	globalState.Lock()
 	defer globalState.Unlock()
 
+	length := len(globalState.questions)
+
 	for index, question := range globalState.Questions {
-		if !question.Seen {
-			globalState.Questions[index].Seen = true
-			return strconv.FormatInt(int64(index), 10), &question, nil
+		if question.Seen.IsZero() {
+			globalState.Questions[index].Seen = time.Now()
+			return strconv.FormatInt(int64(index), 10), &question, nil, index, length
 		}
 	}
 
-	return "", nil, nil
+	return "", nil, nil, length, length
 }
 
 func AnswerQuestion(r *http.Request, key string, response []int) error {

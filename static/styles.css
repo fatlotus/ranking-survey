@@ -4,8 +4,13 @@ body {
 }
 
 body .container {
-    max-width: 40em;
+    max-width: 90%;
     margin: 0 auto;
+}
+
+body .container img {
+    max-height: 20em;
+    width: auto;
 }
 
 .invisible-upload {
