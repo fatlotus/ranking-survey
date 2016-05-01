@@ -127,8 +127,14 @@ func AddQuestions(r *http.Request, questions []Question) error {
 		counts[survey] += 1
 	}
 
-	if _, err := datastore.PutMulti(c, keys, questions); err != nil {
-		return err
+	for j := 0; j < len(keys); j += 500 {
+		k := j + 500
+		if k >= len(keys) {
+			k = len(keys) - 1
+		}
+		if _, err := datastore.PutMulti(c, keys[j:k], questions[j:k]); err != nil {
+			return err
+		}
 	}
 
 	// Remove old entities from the datastore.

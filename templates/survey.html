@@ -20,13 +20,12 @@
           Which one is funnier?
         {{else if binary $.Question}}
           Is this funny?
+        {{else if justone $.Question}}
+          Please rate how funny the following item is.
         {{else if $.Question.Exclusive}}
           Please rank how funny the following things are.
         {{else}}
           Please rate how funny the following things are.
-        {{end}}
-        {{if $.Question}}
-          (#{{.Number}} of {{.Total}})
         {{end}}
         </h3>
       </div>
@@ -93,7 +92,7 @@
               {{if le $.Question.Precision 10}}
               <th colspan="{{ $.Question.Precision }}">
               {{else}}
-              <th>
+              <th colspan="{{ div $.Question.Precision 100 }}">
               {{end}}
                 {{if $.Question.Exclusive}}
                 <span style="float:left">Least funny</span>
@@ -110,6 +109,12 @@
                 <td style="text-align:center">{{ add1 $prec }}</td>
               {{end}}
             </tr>
+            {{else}}
+            <tr>
+              {{range $prec, $elem := loop (div $.Question.Precision 100)}}
+                <td style="text-align:center">{{ add1 $prec }}</td>
+              {{end}}
+            </tr>
             {{end}}
           </thead>
           {{end}}
@@ -119,7 +124,8 @@
               <td colspan="{{ $.Question.Precision }}" style="text-align:center">
                 {{ asHTML . }}</td>
               {{else}}
-              <td style="text-align:center">{{ asHTML . }}</td>
+              <td colspan="{{ div $.Question.Precision 100 }}"
+                  style="text-align:center">{{ asHTML . }}</td>
               {{end}}
             </tr>
             {{if not (binary $.Question)}}
@@ -138,7 +144,7 @@
                   </td>
                 {{end}}
               {{else}}
-              <td>
+              <td colspan="{{div $.Question.Precision 100}}">
                 <input type="range" name="response-{{ $index }}"
                   min="1" max="{{ $.Question.Precision }}"/>
               </td>

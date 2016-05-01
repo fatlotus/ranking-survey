@@ -24,6 +24,9 @@ var tmpl = template.Must(template.New("survey").Funcs(
 		"loop": func(n int) []string {
 			return make([]string, n)
 		},
+		"div": func(a, b int) int {
+			return a / b
+		},
 		"add1": func(n int) int {
 			return n + 1
 		},
@@ -35,6 +38,9 @@ var tmpl = template.Must(template.New("survey").Funcs(
 		},
 		"contpairwise": func(q Question) bool {
 			return q.Exclusive && len(q.Choices) == 2 && q.Precision > 10
+		},
+		"justone": func(q Question) bool {
+			return len(q.Choices) == 1
 		},
 		"binary": func(q Question) bool {
 			return len(q.Choices) == 1 && q.Precision == 2

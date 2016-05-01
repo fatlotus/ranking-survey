@@ -225,7 +225,7 @@ with open("questions.json", "w") as fp:
                 json.dump({
                     "survey": survey,
                     "choices": [a, b],
-                    "precision": 200 if continuous else 2,
+                    "precision": 2,
                     "exclusive": True,
                 }, fp)
                 fp.write("\n")
@@ -236,7 +236,7 @@ with open("questions.json", "w") as fp:
                 json.dump({
                     "survey": survey,
                     "choices": [a],
-                    "precision": subject,
+                    "precision": subject * 100 if continuous else subject,
                     "exclusive": True,
                 }, fp)
                 fp.write("\n")
