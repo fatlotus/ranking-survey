@@ -25,7 +25,7 @@ func NextQuestion(r *http.Request, s SurveyID) (string, *Question, error, int, i
 	globalState.Lock()
 	defer globalState.Unlock()
 
-	length := len(globalState.questions)
+	length := len(globalState.Questions)
 
 	for index, question := range globalState.Questions {
 		if question.Seen.IsZero() {
