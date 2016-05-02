@@ -110,11 +110,13 @@
               {{end}}
             </tr>
             {{else}}
+            <!--
             <tr>
               {{range $prec, $elem := loop (div $.Question.Precision 100)}}
                 <td style="text-align:center">{{ add1 $prec }}</td>
               {{end}}
             </tr>
+            -->
             {{end}}
           </thead>
           {{end}}
