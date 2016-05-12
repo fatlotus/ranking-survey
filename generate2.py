@@ -210,36 +210,37 @@ urls = [
 markup = ['<img src="{}" width="95%"/>'.format(url) for url in urls]
 
 with open("questions.json", "w") as fp:
-    for subject in [2, 3, 5, "cmp"]:
-        for continuous in [False, True]:
-            survey = "experiment/{}{}".format(subject,
-                                              "-cont" if continuous else "")
-            comparisons, rating = 20, 80
-            if subject == "cmp":
-                comparisons, rating = 100, 0
+    for j in xrange(100):
+        for subject in [2, 3, 5, "cmp"]:
+            for continuous in [False, True]:
+                survey = "experiment/{}/{}{}".format(
+                    j, subject, "-cont" if continuous else "")
+                comparisons, rating = 20, 80
+                if subject == "cmp":
+                    comparisons, rating = 100, 0
 
-            for i in xrange(comparisons):
-                a = random.choice(markup)
-                b = random.choice(markup)
+                for i in xrange(comparisons):
+                    a = random.choice(markup)
+                    b = random.choice(markup)
 
-                json.dump({
-                    "survey": survey,
-                    "choices": [a, b],
-                    "precision": 2,
-                    "exclusive": True,
-                }, fp)
-                fp.write("\n")
+                    json.dump({
+                        "survey": survey,
+                        "choices": [a, b],
+                        "precision": 2,
+                        "exclusive": True,
+                    }, fp)
+                    fp.write("\n")
 
-            for i in xrange(rating):
-                a = random.choice(markup)
+                for i in xrange(rating):
+                    a = random.choice(markup)
 
-                json.dump({
-                    "survey": survey,
-                    "choices": [a],
-                    "precision": subject * 100 if continuous else subject,
-                    "exclusive": True,
-                }, fp)
-                fp.write("\n")
+                    json.dump({
+                        "survey": survey,
+                        "choices": [a],
+                        "precision": subject * 100 if continuous else subject,
+                        "exclusive": True,
+                    }, fp)
+                    fp.write("\n")
 
     # for i in xrange(100):
     #     a = random.choice(markup)

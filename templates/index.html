@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Experiment</title>
+  <link rel="stylesheet" href="/static/bootstrap.min.css"/>
+  <link rel="stylesheet" href="/static/styles.css"/>
+</head>
+<body>
+  <div class="container" style="max-width:30em">
+    <form method="post" class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Experiment</h3>
+      </div>
+      <div class="panel-body">
+        <div class="form-group">
+          <label for="email">Email Address:</label>
+          <input type="email" class="form-control" id="email" name="email"
+            placeholder="Enter email address..."/>
+        </div>
+        <input type="submit" class="btn btn-success" value="Begin Experiment"/>
+      </div>
+    </form>
+    <script>
+      var button = document.querySelector(".btn");
+      var email = document.querySelector("#email");
+      var update = function() {
+        button.disabled = !email.value.match(/^.+@.+$/);
+      }
+      email.onkeyup = update;
+      update();
+    </script>
+    {{if .Admin}}
+    <div class="panel panel-default">
+      <form class="panel-body" method="post" action="/questions.json"
+          enctype="multipart/form-data">
+        <button class="btn btn-default invisible-upload">
+          Upload New .JSON
+          <input type="file" name="file"
+            onchange="if (this.value) this.parentNode.parentNode.submit()"/>
+        </button>
+      </form>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Experiment</th>
+            <th># Seen of # Total</th>
+          </tr>
+        </thead>
+        {{range .Surveys}}
+          <tr>
+            <td><a href="/{{.Survey}}">{{.Survey}}</a></td>
+            <td>{{.Seen}} of {{.Total}}</td>
+          </tr>
+        {{end}}
+      </table>
+    </div>
+    {{end}}
+  </div>
+</body>
+</html>

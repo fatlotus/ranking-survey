@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/elazarl/go-bindata-assetfs"
 	"html/template"
+	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -19,7 +21,14 @@ func MakeHandler() http.Handler {
 	return mux
 }
 
-var tmpl = template.Must(template.New("survey").Funcs(
+var indexTmpl = template.Must(template.New("index.html").Funcs(
+	template.FuncMap{
+		"prog": func(a, b int) int {
+			return 100 * a / b
+		},
+	}).Parse(string(MustAsset("templates/index.html"))))
+
+var surveyTmpl = template.Must(template.New("survey.html").Funcs(
 	template.FuncMap{
 		"loop": func(n int) []string {
 			return make([]string, n)
@@ -47,9 +56,44 @@ var tmpl = template.Must(template.New("survey").Funcs(
 		},
 	}).Parse(string(MustAsset("templates/survey.html"))))
 
+func homePage(w http.ResponseWriter, r *http.Request) {
+	surveys, err := AllSurveys(r)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	if r.Method == "POST" {
+		options := make([]Survey, 0)
+		for _, survey := range surveys {
+			if survey.Seen == 0 {
+				options = append(options, survey)
+			}
+		}
+
+		selected := rand.Intn(len(options))
+		http.Redirect(w, r, "/"+string(options[selected].Survey)+
+			"?email="+url.QueryEscape(r.FormValue("email")), 303)
+		return
+	}
+
+	w.Header().Set("Content-type", "text/html")
+	err = indexTmpl.Execute(w, struct {
+		Surveys []Survey
+		Admin   bool
+	}{surveys, IsAdmin(r)})
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
+}
+
 func survey(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, ".json") {
 		result(w, r)
+		return
+	} else if r.URL.Path == "/" {
+		homePage(w, r)
 		return
 	}
 
@@ -60,7 +104,8 @@ func survey(w http.ResponseWriter, r *http.Request) {
 
 	// Process existing response, if one is given.
 	question := r.FormValue("question")
-	if question != "" {
+	email := r.FormValue("email")
+	if question != "" && email != "" {
 		values := make([]int, 0)
 
 		for i := 0; ; i++ {
@@ -71,7 +116,7 @@ func survey(w http.ResponseWriter, r *http.Request) {
 			}
 			values = append(values, int(val))
 		}
-		if err := AnswerQuestion(r, question, values); err != nil {
+		if err := AnswerQuestion(r, question, email, values); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
@@ -86,7 +131,7 @@ func survey(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-type", "text/html")
 
-	err = tmpl.Execute(w, struct {
+	err = surveyTmpl.Execute(w, struct {
 		Survey   SurveyID
 		Question *Question
 		ID       string

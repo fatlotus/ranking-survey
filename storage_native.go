@@ -21,6 +21,26 @@ func IsAdmin(r *http.Request) bool {
 
 var globalState sharedState
 
+func AllSurveys(r *http.Request) ([]Survey, error) {
+	globalState.Lock()
+	defer globalState.Unlock()
+
+	seen := 0
+	total := 0
+	for _, q := range globalState.Questions {
+		if !q.Seen.IsZero() {
+			seen += 1
+		}
+		total += 1
+	}
+
+	return Survey{
+		Survey: "survey",
+		Seen:   seen,
+		Total:  total,
+	}
+}
+
 func NextQuestion(r *http.Request, s SurveyID) (string, *Question, error, int, int) {
 	globalState.Lock()
 	defer globalState.Unlock()
@@ -37,7 +57,7 @@ func NextQuestion(r *http.Request, s SurveyID) (string, *Question, error, int, i
 	return "", nil, nil, length, length
 }
 
-func AnswerQuestion(r *http.Request, key string, response []int) error {
+func AnswerQuestion(r *http.Request, key, email string, response []int) error {
 	globalState.Lock()
 	defer globalState.Unlock()
 
@@ -52,6 +72,7 @@ func AnswerQuestion(r *http.Request, key string, response []int) error {
 		return errors.New("out of range")
 	}
 
+	globalState.Questions[int(index)].Email = email
 	globalState.Questions[int(index)].Response = response
 	return nil
 }

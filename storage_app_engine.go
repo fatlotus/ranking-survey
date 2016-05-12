@@ -10,6 +10,7 @@ import (
 	"google.golang.org/appengine/user"
 	"math/rand"
 	"net/http"
+	"sort"
 	"time"
 )
 
@@ -19,6 +20,40 @@ func init() {
 
 func IsAdmin(r *http.Request) bool {
 	return user.IsAdmin(appengine.NewContext(r))
+}
+
+func AllSurveys(r *http.Request) ([]Survey, error) {
+	c := appengine.NewContext(r)
+
+	questions := make([]Question, 0)
+	q := datastore.NewQuery("Question").Project("survey", "seen")
+	_, err := q.GetAll(c, &questions)
+	if err != nil {
+		return nil, err
+	}
+
+	seen := map[SurveyID]int{}
+	total := map[SurveyID]int{}
+
+	for _, q := range questions {
+		if !q.Seen.IsZero() {
+			seen[q.Survey] += 1
+		}
+		total[q.Survey] += 1
+	}
+
+	surveys := []Survey{}
+	for id, total := range total {
+		surveys = append(surveys, Survey{
+			Survey: id,
+			Seen:   seen[id],
+			Total:  total,
+		})
+	}
+
+	sort.Sort(ByID(surveys))
+
+	return surveys, nil
 }
 
 func NextQuestion(r *http.Request, s SurveyID) (i string, q *Question, e error, f int, t int) {
@@ -68,7 +103,7 @@ func NextQuestion(r *http.Request, s SurveyID) (i string, q *Question, e error, 
 	return
 }
 
-func AnswerQuestion(r *http.Request, key string, response []int) error {
+func AnswerQuestion(r *http.Request, key, email string, response []int) error {
 	c := appengine.NewContext(r)
 
 	var question Question
@@ -89,6 +124,7 @@ func AnswerQuestion(r *http.Request, key string, response []int) error {
 
 	question.Responded = time.Now()
 	question.Response = response
+	question.Email = email
 	_, err := datastore.Put(c, dbkey, &question)
 	return err
 }
