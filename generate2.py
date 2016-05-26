@@ -209,8 +209,8 @@ urls = [
 
 markup = ['<img src="{}" width="95%"/>'.format(url) for url in urls]
 
-with open("questions.json", "w") as fp:
-    for j in xrange(100):
+for j in xrange(100):
+    with open("questions-{}.json".format(j), "w") as fp:
         for subject in [2, 3, 5, "cmp"]:
             for continuous in [False, True]:
                 survey = "experiment/{}/{}{}".format(
