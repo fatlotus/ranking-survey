@@ -34,11 +34,11 @@ func AllSurveys(r *http.Request) ([]Survey, error) {
 		total += 1
 	}
 
-	return Survey{
+	return []Survey{Survey{
 		Survey: "survey",
 		Seen:   seen,
 		Total:  total,
-	}
+	}}, nil
 }
 
 func NextQuestion(r *http.Request, s SurveyID) (string, *Question, error, int, int) {
