@@ -124,7 +124,7 @@ def uniques(values):
         yield item
 
 
-def generate_surveys(choices, precisions=[2, 5, "cmp"], count=100):
+def generate_surveys(choices, precisions=[2, 5, 100, "cmp"], count=100):
     """
     Generate a list of iterables for each survey.
 
@@ -152,7 +152,7 @@ def generate_surveys(choices, precisions=[2, 5, "cmp"], count=100):
 
 def main():
     meme_urls = open("memes.txt").readlines()
-    markup = ['<!--{}--><img src="{}" width="95%"/>'.format(idx, url)
+    markup = ['<!--{}--><img src="{}" style="width:90%"/>'.format(idx, url)
               for idx, url in enumerate(meme_urls)]
 
     shutil.rmtree("surveys", ignore_errors=True)
@@ -161,7 +161,7 @@ def main():
     for i, surveys in enumerate(grouper(generate_surveys(markup), 30)):
         with open("surveys/chunk-{:02d}.json".format(i), "w") as fp:
             for survey in surveys:
-                for question in survey:
+                for question in survey or []:
                     fp.write(json.dumps(question._asdict()) + "\n")
 
 if __name__ == "__main__":

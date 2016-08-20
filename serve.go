@@ -54,31 +54,62 @@ var surveyTmpl = template.Must(template.New("survey.html").Funcs(
 		"binary": func(q Question) bool {
 			return len(q.Choices) == 1 && q.Precision == 2
 		},
+		"align": func(index, total int) string {
+			if total == 1 {
+				return "center"
+			} else if index == 0 {
+				return "left"
+			} else if index == total-1 {
+				return "right"
+			} else {
+				return "center"
+			}
+		},
 	}).Parse(string(MustAsset("templates/survey.html"))))
 
 func homePage(w http.ResponseWriter, r *http.Request) {
-	surveys, err := AllSurveys(r)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
+	surveys := []Survey(nil)
+	if IsAdmin(r) {
+		var err error
+		surveys, err = AllSurveys(r)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
 	}
 
 	if r.Method == "POST" {
-		options := make([]Survey, 0)
-		for _, survey := range surveys {
-			if survey.Seen == 0 {
-				options = append(options, survey)
+		options := make([]string, 0)
+		for i := 0; i < 100; i++ {
+			// this is stupid, but it is faster than scanning the
+			// database each time
+			options = append(options, fmt.Sprintf("experiment/%d/2", i))
+			options = append(options, fmt.Sprintf("experiment/%d/5", i))
+			options = append(options, fmt.Sprintf("experiment/%d/100", i))
+			options = append(options, fmt.Sprintf("experiment/%d/cmp", i))
+		}
+
+		for try := len(options); try >= 0; try -= 10 {
+			selected := rand.Intn(len(options))
+
+			free, err := IsFree(r, SurveyID(options[selected]))
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			if free {
+				http.Redirect(w, r, "/"+options[selected]+
+					"?email="+url.QueryEscape(r.FormValue("email")), 303)
+				return
 			}
 		}
 
-		selected := rand.Intn(len(options))
-		http.Redirect(w, r, "/"+string(options[selected].Survey)+
-			"?email="+url.QueryEscape(r.FormValue("email")), 303)
+		http.Error(w, "no surveys left?", 500)
 		return
 	}
 
 	w.Header().Set("Content-type", "text/html")
-	err = indexTmpl.Execute(w, struct {
+	err := indexTmpl.Execute(w, struct {
 		Surveys []Survey
 		Admin   bool
 	}{surveys, IsAdmin(r)})
@@ -105,7 +136,7 @@ func survey(w http.ResponseWriter, r *http.Request) {
 	// Process existing response, if one is given.
 	question := r.FormValue("question")
 	email := r.FormValue("email")
-	if question != "" && email != "" {
+	if question != "" {
 		values := make([]int, 0)
 
 		for i := 0; ; i++ {

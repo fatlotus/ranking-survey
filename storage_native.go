@@ -21,6 +21,21 @@ func IsAdmin(r *http.Request) bool {
 
 var globalState sharedState
 
+func IsFree(r *http.Request, s SurveyID) (bool, error) {
+	surveys, err := AllSurveys(r)
+	if err != nil {
+		return false, err
+	}
+
+	for _, survey := range surveys {
+		if survey.Survey == s {
+			return survey.Seen == 0, nil
+		}
+	}
+
+	return false, nil
+}
+
 func AllSurveys(r *http.Request) ([]Survey, error) {
 	globalState.Lock()
 	defer globalState.Unlock()
@@ -77,11 +92,14 @@ func AnswerQuestion(r *http.Request, key, email string, response []int) error {
 	return nil
 }
 
-func AllQuestions(r *http.Request, survey SurveyID) <-chan Question {
+func AllQuestions(r *http.Request, survey SurveyID) ([]Question, error) {
+	globalState.Lock()
+	defer globalState.Unlock()
+
+	return globalState.Questions, nil
+
 	channel := make(chan Question)
 	go func() {
-		globalState.Lock()
-		defer globalState.Unlock()
 
 		for _, q := range globalState.Questions {
 			channel <- q

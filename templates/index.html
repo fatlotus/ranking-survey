@@ -10,7 +10,7 @@
   <div class="container" style="max-width:30em">
     <form method="post" class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title">Experiment</h3>
+        <h3 class="panel-title">Start The Funny Survey</h3>
       </div>
       <div class="panel-body">
         <!--
@@ -20,18 +20,9 @@
             placeholder="Enter email address..."/>
         </div>
         -->
-        <input type="submit" class="btn btn-success" value="Begin Experiment"/>
+        <input type="submit" class="btn btn-success" value="Start The Funny Survey"/>
       </div>
     </form>
-    <script>
-      var button = document.querySelector(".btn");
-      var email = document.querySelector("#email");
-      var update = function() {
-        button.disabled = !email.value.match(/^.+@.+$/);
-      }
-      email.onkeyup = update;
-      update();
-    </script>
     {{if .Admin}}
     <div class="panel panel-default">
       <form class="panel-body" method="post" action="/questions.json"
@@ -46,16 +37,24 @@
         <thead>
           <tr>
             <th>Experiment</th>
-            <th># Seen of # Total</th>
+            <th># Impressions</th>
           </tr>
         </thead>
         {{range .Surveys}}
           <tr>
-            <td><a href="/{{.Survey}}">{{.Survey}}</a></td>
-            <td>{{.Seen}} of {{.Total}}</td>
+            <td><a href="/{{.Survey}}.json?download=yes">{{.Survey}}</a></td>
+            <td>{{.Seen}}</td>
           </tr>
+        {{else}}
+          <tr><td colspan="2">No surveys uploaded yet.</td></tr>
         {{end}}
       </table>
+    </div>
+    {{else}}
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <a href="/admin" class="btn btn-default">Login as Administrator</a>
+      </div>
     </div>
     {{end}}
   </div>

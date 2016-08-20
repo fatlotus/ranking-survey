@@ -6,7 +6,10 @@ version: master
 handlers:
 - url: /static
   static_dir: static
-- url: /questions.csv
+- url: /(.*).json$
+  login: admin
+  script: _go_app
+- url: /admin
   login: admin
   script: _go_app
 - url: /.*

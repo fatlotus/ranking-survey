@@ -5,7 +5,7 @@
   <title>Experiment</title>
   <link rel="stylesheet" href="/static/bootstrap.min.css"/>
   <link rel="stylesheet" href="/static/styles.css"/>
-  <script src="static/main.js"></script>
+  <script src="/static/main.js"></script>
 </head>
 <body>
   <div class="container">
@@ -21,26 +21,30 @@
         {{else if binary $.Question}}
           Is this funny?
         {{else if justone $.Question}}
-          Please rate how funny the following item is.
+          How funny is this?
         {{else if $.Question.Exclusive}}
-          Please rank how funny the following things are.
+          How funny are these?
         {{else}}
-          Please rate how funny the following things are.
+          How funny are these?
         {{end}}
         </h3>
       </div>
       {{if .ID}}
         <input type="hidden" name="question" value="{{ .ID }}"/>
         {{if pairwise $.Question }}
-          <table class="table hidden-xs hidden-sm">
+          <table class="table hidden-xs hidden-sm" style="table-layout:fixed">
             <tr>
               {{range $index, $element := .Question.Choices}}
-                <td style="width:50%;text-align:center">{{ asHTML . }}</td>
+                <td style="
+                  width:50%;
+                  text-align:{{align $index (len $.Question.Choices) }}">
+                    {{ asHTML . }}</td>
               {{end}}
             </tr>
             <tr>
               {{range $index, $element := .Question.Choices}}
-                <td>
+                <td style="
+                  text-align:{{align $index (len $.Question.Choices) }}">
                   <button class="btn btn-primary"
                      name="response-{{$index}}"
                      value="1">This one is funnier.</button>
@@ -48,10 +52,12 @@
               {{end}}
             </tr>
           </table>
-          <table class="table hidden-md hidden-lg">
+          <table class="table hidden-md hidden-lg" style="table-layout:fixed">
             {{range $index, $element := .Question.Choices}}
               <tr>
-                <td style="text-align:center">{{ asHTML . }}</td>
+                <td style="
+                  text-align:{{align $index (len $.Question.Choices) }}">
+                    {{ asHTML . }}</td>
               </tr>
               <tr>
                 <td>
@@ -65,10 +71,12 @@
           <input type="hidden" name="response-0" value="0"/>
           <input type="hidden" name="response-1" value="0"/>
         {{else if contpairwise $.Question}}
-          <table class="table">
+          <table class="table" style="table-layout:fixed">
             <tr>
               {{range $index, $element := .Question.Choices}}
-                <td style="text-align:center">{{ asHTML . }}</td>
+                <td style="
+                  text-align:{{align $index (len $.Question.Choices) }}">
+                    {{ asHTML . }}</td>
               {{end}}
             </tr>
             <tr>
@@ -85,7 +93,7 @@
             <input type="submit" class="btn btn-primary"/>
           </div>
         {{else}}
-          <table class="table">
+          <table class="table" style="table-layout:fixed">
           {{if not (binary $.Question)}}
           <thead>
             <tr>
@@ -96,10 +104,10 @@
               {{end}}
                 {{if $.Question.Exclusive}}
                 <span style="float:left">Not funny at all</span>
-                <span style="float:right">Hilarious</span>
+                <span style="float:right">Extremely funny</span>
                 {{else}}
-                <span style="float:left">Not very funny</span>
-                <span style="float:right">Very funny</span>
+                <span style="float:left">Not funny at all</span>
+                <span style="float:right">Extremely funny</span>
                 {{end}}
               </th>
             </tr>
@@ -123,11 +131,14 @@
           {{range $index, $element := .Question.Choices}}
             <tr>
               {{if le $.Question.Precision 10}}
-              <td colspan="{{ $.Question.Precision }}" style="text-align:center">
+              <td colspan="{{ $.Question.Precision }}"
+                 style="text-align:{{align $index (len $.Question.Choices) }}">
                 {{ asHTML . }}</td>
               {{else}}
               <td colspan="{{ div $.Question.Precision 100 }}"
-                  style="text-align:center">{{ asHTML . }}</td>
+                  style="
+                    text-align:{{align $index (len $.Question.Choices) }}">
+                      {{ asHTML . }}</td>
               {{end}}
             </tr>
             {{if not (binary $.Question)}}
@@ -160,7 +171,7 @@
             <button type="submit" class="btn btn-primary"
               name="response-0" value="1">No</button>
             <button type="submit" class="btn btn-primary"
-              name="response-0" value="1" style="float:right">Yes</button>
+              name="response-0" value="2" style="float:right">Yes</button>
           </div>
           {{else}}
           <div class="panel-footer">
@@ -188,8 +199,10 @@
       </form>
   </div>
   {{end}}
+  {{with $.Question}}
   <script type="text/javascript">
-  configureOptions({{$.Question.Exclusive}})
+  configureOptions({{.Exclusive}})
   </script>
+  {{end}}
 </body>
 </html>
