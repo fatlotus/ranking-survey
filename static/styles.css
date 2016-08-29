@@ -10,7 +10,7 @@ body .container {
 
 body .container img {
     max-height: 30em;
-    width: auto;
+    width: auto !important;
 }
 
 .invisible-upload {

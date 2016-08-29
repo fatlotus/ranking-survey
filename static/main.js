@@ -59,8 +59,8 @@ var configureOptions = function(exclusive) {
 
       update();
 
-      e.preventDefault();
-      return false;
+      if (hiddens.length == 1) // submit if there's nothing else to select
+        submitButton.click();
     });
   });
 
