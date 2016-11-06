@@ -97,16 +97,6 @@ func AllQuestions(r *http.Request, survey SurveyID) ([]Question, error) {
 	defer globalState.Unlock()
 
 	return globalState.Questions, nil
-
-	channel := make(chan Question)
-	go func() {
-
-		for _, q := range globalState.Questions {
-			channel <- q
-		}
-		close(channel)
-	}()
-	return channel
 }
 
 func AddQuestions(r *http.Request, questions []Question) error {
