@@ -4,7 +4,9 @@ dependencies:
     - sudo /opt/google-cloud-sdk/bin/gcloud --quiet components update
     - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
     - gcloud config set project ranking-survey
-    - go get golang.org/x/net/context google.golang.org/appengine
+    - go get golang.org/x/net/context
+    - go get google.golang.org/appengine
+    - go get github.com/elazarl/go-bindata-assetfs
 
 test:
   override:
