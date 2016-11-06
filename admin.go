@@ -86,6 +86,7 @@ func result(w http.ResponseWriter, r *http.Request) {
 		ids := []int(nil)
 
 		for j, choice := range question.Choices {
+			// This was terrible programming practice :(
 			if len(choice) > 4 && choice[:4] == "<!--" {
 				if len(ids) == 0 {
 					ids = make([]int, len(question.Choices))
