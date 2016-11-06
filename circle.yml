@@ -2,8 +2,8 @@ dependencies:
   pre:
     - echo $GCLOUD_SERVICE_KEY | base64 --decode > ${HOME}/gcloud-service-key.json
     - sudo /opt/google-cloud-sdk/bin/gcloud --quiet components update
-    - sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
-    - sudo /opt/google-cloud-sdk/bin/gcloud config set project ranking-survey
+    - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
+    - gcloud config set project ranking-survey
     - go get golang.org/x/net/context google.golang.org/appengine
 
 test:
@@ -15,3 +15,4 @@ deployment:
     branch: /.*/
     commands:
       - gcloud -q app deploy app.yaml --promote --version=$(git rev-parse --abbrev-ref HEAD)
+      - ~/go_appengine/appcfg.py update . --version=$(git rev-parse --abbrev-ref HEAD) --oauth2_refresh_token=$OAUTH2_REFRESH_TOKEN
