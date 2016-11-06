@@ -173,8 +173,8 @@
             <button type="submit" class="btn btn-primary"
               name="response-0" value="2" style="float:right">Yes</button>
           </div>
-          {{else}}
-          <div class="panel-footer">
+          {{else if or (gt (len $.Question.Choices) 1) (gt $.Question.Precision 10)}}
+          <div class="panel-footer" style="text-align:center">
             <input type="submit" class="btn btn-primary"/>
           </div>
           {{end}}
