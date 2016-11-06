@@ -7,6 +7,8 @@ dependencies:
     - go get golang.org/x/net/context
     - go get google.golang.org/appengine
     - go get github.com/elazarl/go-bindata-assetfs
+    - curl -o ~/go_appengine_sdk_linux_amd64-1.9.27.zip https://storage.googleapis.com/appengine-sdks/featured/go_appengine_sdk_linux_amd64-1.9.27.zip
+    - unzip -q -d ~ ~/go_appengine_sdk_linux_amd64-1.9.27.zip
 
 test:
   override:
@@ -16,5 +18,4 @@ deployment:
   appengine:
     branch: /.*/
     commands:
-      - gcloud -q app deploy app.yaml --promote --version=$(git rev-parse --abbrev-ref HEAD)
-      - ~/go_appengine/appcfg.py update . --version=$(git rev-parse --abbrev-ref HEAD) --oauth2_refresh_token=$OAUTH2_REFRESH_TOKEN
+      - ~/go_appengine/appcfg.py update . --version=$(git rev-parse --abbrev-ref HEAD) --oauth2_refresh_token=$OAUTH2_REFRESH_TOKEN -A ranking-survey
