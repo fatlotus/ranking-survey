@@ -4,6 +4,7 @@ package rankingsurvey
 
 import (
 	"errors"
+	"github.com/elazarl/go-bindata-assetfs"
 	"net/http"
 	"strconv"
 	"sync"
@@ -13,6 +14,11 @@ import (
 type sharedState struct {
 	Questions []Question
 	sync.Mutex
+}
+
+func staticHandler() http.Handler {
+	return http.FileServer(
+		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: ""})
 }
 
 func IsAdmin(r *http.Request) bool {

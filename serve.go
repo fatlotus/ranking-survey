@@ -2,7 +2,6 @@ package rankingsurvey
 
 import (
 	"fmt"
-	"github.com/elazarl/go-bindata-assetfs"
 	"html/template"
 	"math/rand"
 	"net/http"
@@ -16,8 +15,7 @@ import (
 func MakeHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", survey)
-	mux.Handle("/static/", http.FileServer(
-		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: ""}))
+	mux.Handle("/static/", staticHandler())
 	return mux
 }
 

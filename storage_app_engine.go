@@ -23,6 +23,10 @@ func init() {
 	http.Handle("/", MakeHandler())
 }
 
+func staticHandler() http.Handler {
+	return http.HandlerFunc(nil)
+}
+
 func IsAdmin(r *http.Request) bool {
 	return user.IsAdmin(appengine.NewContext(r))
 }
